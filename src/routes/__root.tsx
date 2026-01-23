@@ -90,12 +90,38 @@ function RootComponent() {
 /**
  * Register service worker and handle updates.
  */
+let waitingWorker: ServiceWorker | null = null;
+
+const showUpdateToast = (worker: ServiceWorker) => {
+  waitingWorker = worker;
+  toast("Update Available", {
+    description: "A new version is available. Refresh to update.",
+    action: {
+      label: "Refresh",
+      onClick: () => {
+        waitingWorker?.postMessage({ type: "SKIP_WAITING" });
+      },
+    },
+    duration: Number.POSITIVE_INFINITY,
+  });
+};
+
 const registerServiceWorker = async () => {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+  // Reload when new SW takes control
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    window.location.reload();
+  });
 
   try {
     const registration = await navigator.serviceWorker.register("/sw.js");
     console.info("SW registered:", registration.scope);
+
+    // Check if there's already a waiting worker
+    if (registration.waiting) {
+      showUpdateToast(registration.waiting);
+    }
 
     // Check for updates periodically
     setInterval(
@@ -105,7 +131,7 @@ const registerServiceWorker = async () => {
       60 * 60 * 1000,
     ); // Check every hour
 
-    // Handle updates
+    // Handle new workers that arrive later
     registration.addEventListener("updatefound", () => {
       const newWorker = registration.installing;
       if (!newWorker) return;
@@ -115,14 +141,7 @@ const registerServiceWorker = async () => {
           newWorker.state === "installed" &&
           navigator.serviceWorker.controller
         ) {
-          toast("Update Available", {
-            description: "A new version is available. Refresh to update.",
-            action: {
-              label: "Refresh",
-              onClick: () => window.location.reload(),
-            },
-            duration: Number.POSITIVE_INFINITY,
-          });
+          showUpdateToast(newWorker);
         }
       });
     });
