@@ -5,7 +5,6 @@ import {
   Github,
   Heart,
   MessageSquare,
-  RefreshCw,
   Settings,
   Upload,
 } from "lucide-react";
@@ -452,47 +451,6 @@ const SettingsSheet = ({
               Offline Support
             </p>
             <p>This app works offline. All Bible data is stored locally.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3 w-full gap-2"
-              onClick={async () => {
-                if (!("serviceWorker" in navigator)) {
-                  toast.error("Service workers not supported");
-                  return;
-                }
-                try {
-                  const registration =
-                    await navigator.serviceWorker.getRegistration();
-                  if (!registration) {
-                    toast.error("No service worker found");
-                    return;
-                  }
-                  await registration.update();
-                  if (registration.waiting) {
-                    toast("Update Available", {
-                      description: "Refresh to apply the update.",
-                      action: {
-                        label: "Refresh",
-                        onClick: () => {
-                          registration.waiting?.postMessage({
-                            type: "SKIP_WAITING",
-                          });
-                        },
-                      },
-                      duration: Number.POSITIVE_INFINITY,
-                    });
-                  } else {
-                    toast.success("You're on the latest version");
-                  }
-                } catch {
-                  toast.error("Failed to check for updates");
-                }
-              }}
-            >
-              <RefreshCw className="h-4 w-4" />
-              Check for Updates
-            </Button>
           </div>
 
           <div className="space-y-2 border-border border-t pt-4">

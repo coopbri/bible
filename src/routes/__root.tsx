@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useEffect, useRef } from "react";
-import { Toaster, toast } from "sonner";
+import { Toaster } from "sonner";
 
 import appCss from "@/index.css?url";
 import { initializeCollections } from "@/lib/db/collections";
@@ -88,63 +88,25 @@ function RootComponent() {
 }
 
 /**
- * Register service worker and handle updates.
+ * Register service worker.
+ * Uses skipWaiting + clientsClaim for automatic updates.
  */
-let waitingWorker: ServiceWorker | null = null;
-
-const showUpdateToast = (worker: ServiceWorker) => {
-  waitingWorker = worker;
-  toast("Update Available", {
-    description: "A new version is available. Refresh to update.",
-    action: {
-      label: "Refresh",
-      onClick: () => {
-        waitingWorker?.postMessage({ type: "SKIP_WAITING" });
-      },
-    },
-    duration: Number.POSITIVE_INFINITY,
-  });
-};
+let controllerChangeHandled = false;
 
 const registerServiceWorker = async () => {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
 
-  // Reload when new SW takes control
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    window.location.reload();
-  });
+  // Reload once when a new SW takes control (ensures fresh assets)
+  if (!controllerChangeHandled) {
+    controllerChangeHandled = true;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      window.location.reload();
+    });
+  }
 
   try {
     const registration = await navigator.serviceWorker.register("/sw.js");
     console.info("SW registered:", registration.scope);
-
-    // Check if there's already a waiting worker
-    if (registration.waiting) {
-      showUpdateToast(registration.waiting);
-    }
-
-    // Check for updates periodically
-    setInterval(
-      () => {
-        registration.update();
-      },
-      60 * 60 * 1000,
-    ); // Check every hour
-
-    // Handle new workers that arrive later
-    registration.addEventListener("updatefound", () => {
-      const newWorker = registration.installing;
-      if (!newWorker) return;
-
-      newWorker.addEventListener("statechange", () => {
-        if (
-          newWorker.state === "installed" &&
-          navigator.serviceWorker.controller
-        ) {
-          showUpdateToast(newWorker);
-        }
-      });
-    });
   } catch (error) {
     console.error("SW registration failed:", error);
   }
