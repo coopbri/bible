@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 import { userPreferencesService } from "@/lib/userPreferences";
 
@@ -31,32 +31,39 @@ export function useScrollHandler({
   handleNextChapter,
 }: UseScrollHandlerOptions): UseScrollHandlerResult {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const isInitialLoadRef = useRef(true);
+  const isInitialMount = useRef(true);
+  const prevLocationRef = useRef({ bookId, chapter });
 
   // Restore scroll position on initial load or reset to top on chapter change
+  // useLayoutEffect ensures scroll happens before browser paint
   // biome-ignore lint/correctness/useExhaustiveDependencies: verses triggers scroll reset on chapter load
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!scrollContainerRef.current) return;
+  useLayoutEffect(() => {
+    if (!scrollContainerRef.current) return;
 
-      if (isInitialLoadRef.current) {
-        const preferences = userPreferencesService.getPreferences();
+    const locationChanged =
+      prevLocationRef.current.bookId !== bookId ||
+      prevLocationRef.current.chapter !== chapter;
 
-        if (
-          preferences.scrollPosition &&
-          preferences.selectedBookId === bookId &&
-          preferences.selectedChapter === chapter
-        ) {
-          scrollContainerRef.current.scrollTop = preferences.scrollPosition;
-        } else {
-          scrollContainerRef.current.scrollTop = 0;
-        }
-        isInitialLoadRef.current = false;
+    if (isInitialMount.current) {
+      // Initial mount: restore saved position if same chapter, otherwise top
+      const preferences = userPreferencesService.getPreferences();
+
+      if (
+        preferences.scrollPosition &&
+        preferences.selectedBookId === bookId &&
+        preferences.selectedChapter === chapter
+      ) {
+        scrollContainerRef.current.scrollTop = preferences.scrollPosition;
       } else {
         scrollContainerRef.current.scrollTop = 0;
       }
-    };
-    handleScroll();
+      isInitialMount.current = false;
+    } else if (locationChanged) {
+      // Chapter/book changed: scroll to top
+      scrollContainerRef.current.scrollTop = 0;
+    }
+
+    prevLocationRef.current = { bookId, chapter };
   }, [bookId, chapter, verses]);
 
   // Save scroll position on scroll
