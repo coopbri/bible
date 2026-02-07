@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   PsalmFooter,
@@ -7,6 +7,7 @@ import {
   ReaderToolbar,
   ReadingModeView,
 } from "@/components/bible";
+import { bibleApi } from "@/lib/bibleApi";
 import {
   useBibleHotkeys,
   useBookmarks,
@@ -45,9 +46,14 @@ function BibleReaderRoute({
 
   // Use suspense queries for reactive data
   const { data: versions } = useSuspenseQuery(versionsOptions());
-  const { data: books } = useSuspenseQuery(booksOptions());
+  useSuspenseQuery(booksOptions());
   const { data: verses } = useSuspenseQuery(
     chapterOptions(versionId, bookId, chapter),
+  );
+
+  const books = useMemo(
+    () => bibleApi.getBooksForVersion(versionId),
+    [versionId],
   );
 
   const currentBook = books?.find((b: BibleBook) => b.id === bookId);
@@ -153,7 +159,12 @@ function BibleReaderRoute({
             selectedVersionId={versionId}
             onVersionChange={(newVersionId) => {
               if (newVersionId) {
-                navigateToChapter(newVersionId, bookId, chapter);
+                const newBooks = bibleApi.getBooksForVersion(newVersionId);
+                if (newBooks.some((b) => b.id === bookId)) {
+                  navigateToChapter(newVersionId, bookId, chapter);
+                } else {
+                  navigateToChapter(newVersionId, 1, 1);
+                }
               }
             }}
             holyWordsEnabled={holyWordsEnabled}

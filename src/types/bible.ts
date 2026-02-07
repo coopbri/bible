@@ -11,7 +11,7 @@ export interface BibleBook {
   id: number;
   book_number: number;
   name: string;
-  testament: "OT" | "NT";
+  testament: "OT" | "NT" | "DC";
   chapters: number;
 }
 

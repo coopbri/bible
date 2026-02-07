@@ -1,9 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 
 import { BibleReaderRoute } from "@/components/bible";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PSALM_QUOTES, getRandomPsalmQuote } from "@/data/psalmQuotes";
+import { bibleApi } from "@/lib/bibleApi";
 import {
   booksOptions,
   chapterOptions,
@@ -29,6 +30,17 @@ export const Route = createFileRoute("/$version/$book/$chapter")({
     const versionId = params.version;
     const bookId = parseInt(params.book, 10);
     const chapter = parseInt(params.chapter, 10);
+
+    // Redirect DC books unsupported by this version to Genesis 1
+    if (bookId > 66) {
+      const versionBooks = bibleApi.getBooksForVersion(versionId);
+      if (!versionBooks.some((b) => b.id === bookId)) {
+        throw redirect({
+          to: "/$version/$book/$chapter",
+          params: { version: versionId, book: "1", chapter: "1" },
+        });
+      }
+    }
 
     // Prefetch data using server functions
     const [versions, books, verses] = await Promise.all([

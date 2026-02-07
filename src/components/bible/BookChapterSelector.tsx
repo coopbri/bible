@@ -73,6 +73,21 @@ const BookChapterSelector = ({
                 ))}
             </>
           )}
+          {(books?.filter((b: BibleBook) => b.testament === "DC").length ?? 0) >
+            0 && (
+            <>
+              <div className="mt-2 px-2 py-1.5 font-bold font-serif text-primary text-sm">
+                Deuterocanon
+              </div>
+              {books
+                ?.filter((b: BibleBook) => b.testament === "DC")
+                .map((book: BibleBook) => (
+                  <SelectItem key={book.id} value={book.id.toString()}>
+                    {book.name}
+                  </SelectItem>
+                ))}
+            </>
+          )}
         </SelectContent>
       </Select>
     </div>

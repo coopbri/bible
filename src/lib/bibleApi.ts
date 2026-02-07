@@ -80,7 +80,38 @@ const BOOK_NAMES: Record<number, string> = {
   64: "3john",
   65: "jude",
   66: "revelation",
+  67: "tobit",
+  68: "judith",
+  69: "wisdomofsolomon",
+  70: "sirach",
+  71: "baruch",
+  72: "1maccabees",
+  73: "2maccabees",
+  74: "1esdras",
+  75: "2esdras",
+  76: "prayerofmanasses",
+  77: "belandthedragon",
+  78: "susanna",
+  79: "songofthethree",
+  80: "3maccabees",
+  81: "4maccabees",
 };
+
+/**
+ * Per-version overrides for book API path names.
+ */
+const BOOK_NAME_OVERRIDES: Record<string, Record<number, string>> = {
+  kjv: { 69: "wisdom", 70: "ecclesiasticus", 76: "manasseh" },
+};
+
+/**
+ * Get the API path name for a book, respecting per-version overrides.
+ */
+const getBookApiName = (
+  bookId: number,
+  versionId: string,
+): string | undefined =>
+  BOOK_NAME_OVERRIDES[versionId]?.[bookId] ?? BOOK_NAMES[bookId];
 
 /**
  * Available Bible versions from the external API.
@@ -324,7 +355,98 @@ const BIBLE_BOOKS: BibleBook[] = [
     testament: "NT",
     chapters: 22,
   },
+  { id: 67, book_number: 67, name: "Tobit", testament: "DC", chapters: 14 },
+  { id: 68, book_number: 68, name: "Judith", testament: "DC", chapters: 16 },
+  {
+    id: 69,
+    book_number: 69,
+    name: "Wisdom of Solomon",
+    testament: "DC",
+    chapters: 19,
+  },
+  { id: 70, book_number: 70, name: "Sirach", testament: "DC", chapters: 51 },
+  { id: 71, book_number: 71, name: "Baruch", testament: "DC", chapters: 6 },
+  {
+    id: 72,
+    book_number: 72,
+    name: "1 Maccabees",
+    testament: "DC",
+    chapters: 16,
+  },
+  {
+    id: 73,
+    book_number: 73,
+    name: "2 Maccabees",
+    testament: "DC",
+    chapters: 15,
+  },
+  { id: 74, book_number: 74, name: "1 Esdras", testament: "DC", chapters: 9 },
+  {
+    id: 75,
+    book_number: 75,
+    name: "2 Esdras",
+    testament: "DC",
+    chapters: 16,
+  },
+  {
+    id: 76,
+    book_number: 76,
+    name: "Prayer of Manasseh",
+    testament: "DC",
+    chapters: 1,
+  },
+  {
+    id: 77,
+    book_number: 77,
+    name: "Bel and the Dragon",
+    testament: "DC",
+    chapters: 1,
+  },
+  { id: 78, book_number: 78, name: "Susanna", testament: "DC", chapters: 1 },
+  {
+    id: 79,
+    book_number: 79,
+    name: "Song of the Three",
+    testament: "DC",
+    chapters: 1,
+  },
+  {
+    id: 80,
+    book_number: 80,
+    name: "3 Maccabees",
+    testament: "DC",
+    chapters: 7,
+  },
+  {
+    id: 81,
+    book_number: 81,
+    name: "4 Maccabees",
+    testament: "DC",
+    chapters: 9,
+  },
 ];
+
+/**
+ * DC book IDs available per version.
+ */
+const DC_BOOKS_BY_VERSION: Record<string, number[]> = {
+  dra: [67, 68, 69, 70, 72, 73],
+  kjv: [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79],
+  web: [67, 68, 69, 70, 72, 73, 74, 75, 76, 80, 81],
+};
+
+/**
+ * Get books available for a specific version (canonical + DC if supported).
+ */
+const getBooksForVersion = (versionId: string): BibleBook[] => {
+  const dcBookIds = DC_BOOKS_BY_VERSION[versionId];
+  if (!dcBookIds) {
+    return BIBLE_BOOKS.filter((b) => b.testament !== "DC");
+  }
+  return BIBLE_BOOKS.filter(
+    (b) => b.testament !== "DC" || dcBookIds.includes(b.id),
+  );
+};
 
 interface ExternalApiVerse {
   book: string;
@@ -405,7 +527,7 @@ const fetchChapterFromApi = async (
   bookId: number,
   chapter: number,
 ): Promise<BibleVerse[]> => {
-  const bookName = BOOK_NAMES[bookId];
+  const bookName = getBookApiName(bookId, versionId);
   if (!bookName) {
     console.error(`Unknown book number: ${bookId}`);
     return [];
@@ -449,6 +571,10 @@ export const bibleApi = {
 
   getBooks(): BibleBook[] {
     return BIBLE_BOOKS;
+  },
+
+  getBooksForVersion(versionId: string): BibleBook[] {
+    return getBooksForVersion(versionId);
   },
 
   async getChapter(
@@ -512,8 +638,15 @@ export const bibleApi = {
     // Next chapter
     if (chapter < book.chapters) {
       chaptersToPreload.push({ bookId, chapter: chapter + 1 });
-    } else if (bookId < 66) {
-      chaptersToPreload.push({ bookId: bookId + 1, chapter: 1 });
+    } else {
+      const versionBooks = getBooksForVersion(versionId);
+      const currentIndex = versionBooks.findIndex((b) => b.id === bookId);
+      if (currentIndex >= 0 && currentIndex < versionBooks.length - 1) {
+        chaptersToPreload.push({
+          bookId: versionBooks[currentIndex + 1].id,
+          chapter: 1,
+        });
+      }
     }
 
     // Preload in background
