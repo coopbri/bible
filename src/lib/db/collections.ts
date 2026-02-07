@@ -2,9 +2,11 @@ import { createCollection, localStorageCollectionOptions } from "@tanstack/db";
 
 import type { BibleVerse } from "@/types/bible";
 import type { Bookmark } from "@/types/bookmarks";
+import type { Highlight } from "@/types/highlights";
 
 // Storage keys
 const BOOKMARKS_KEY = "bible-bookmarks-db";
+const HIGHLIGHTS_KEY = "bible-highlights-db";
 const PREFERENCES_KEY = "bible-preferences-db";
 const CHAPTER_CACHE_KEY = "bible-chapter-cache-db";
 const USER_ID_KEY = "bible-user-id";
@@ -64,6 +66,18 @@ export function createBookmarksCollection() {
 }
 
 /**
+ * Create highlights collection using localStorage.
+ */
+export function createHighlightsCollection() {
+  return createCollection<Highlight, string>(
+    localStorageCollectionOptions({
+      storageKey: HIGHLIGHTS_KEY,
+      getKey: (item) => item.id,
+    }),
+  );
+}
+
+/**
  * Create preferences collection using localStorage.
  */
 export function createPreferencesCollection() {
@@ -89,6 +103,9 @@ export function createChapterCacheCollection() {
 
 // Collection types
 export type BookmarksCollection = ReturnType<typeof createBookmarksCollection>;
+export type HighlightsCollection = ReturnType<
+  typeof createHighlightsCollection
+>;
 export type PreferencesCollection = ReturnType<
   typeof createPreferencesCollection
 >;
@@ -98,6 +115,7 @@ export type ChapterCacheCollection = ReturnType<
 
 // Global collection instances
 let bookmarksCollection: BookmarksCollection | null = null;
+let highlightsCollection: HighlightsCollection | null = null;
 let preferencesCollection: PreferencesCollection | null = null;
 let chapterCacheCollection: ChapterCacheCollection | null = null;
 
@@ -129,12 +147,14 @@ export async function initializeCollections(): Promise<void> {
   if (typeof window === "undefined") return;
 
   bookmarksCollection = createBookmarksCollection();
+  highlightsCollection = createHighlightsCollection();
   preferencesCollection = createPreferencesCollection();
   chapterCacheCollection = createChapterCacheCollection();
 
   // Preload collections to trigger initial data fetch from localStorage
   await Promise.all([
     bookmarksCollection.preload(),
+    highlightsCollection.preload(),
     preferencesCollection.preload(),
     chapterCacheCollection.preload(),
   ]);
@@ -155,6 +175,16 @@ export function getBookmarksCollection(): BookmarksCollection {
     throw new Error("Collections not initialized");
   }
   return bookmarksCollection;
+}
+
+/**
+ * Get the highlights collection.
+ */
+export function getHighlightsCollection(): HighlightsCollection {
+  if (!highlightsCollection) {
+    throw new Error("Collections not initialized");
+  }
+  return highlightsCollection;
 }
 
 /**

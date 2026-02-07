@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import ChapterNavigation from "./ChapterNavigation";
 import VerseList from "./VerseList";
 
-import type { RefObject } from "react";
+import type { CSSProperties, RefObject } from "react";
 import type { BibleVerse } from "@/lib/bibleApi";
 
 interface ReadingModeViewProps {
@@ -17,6 +17,7 @@ interface ReadingModeViewProps {
   verses: BibleVerse[] | undefined;
   versesLoading: boolean;
   bookmarkedVerses: Set<string>;
+  highlightedVerses: Map<string, string>;
   selectedBookId: number;
   totalChapters: number;
   hasPrevious: boolean;
@@ -28,6 +29,10 @@ interface ReadingModeViewProps {
   onPreviousChapter: () => void;
   onNextChapter: () => void;
   onToggleBookmark: (verse: BibleVerse) => void;
+  onShareVerse: (verse: BibleVerse) => void;
+  onHighlightVerse: (verse: BibleVerse, color: string) => void;
+  onRemoveHighlight: (verse: BibleVerse) => void;
+  swipeStyle: CSSProperties;
 }
 
 /**
@@ -41,6 +46,7 @@ const ReadingModeView = ({
   verses,
   versesLoading,
   bookmarkedVerses,
+  highlightedVerses,
   selectedBookId,
   totalChapters,
   hasPrevious,
@@ -52,6 +58,10 @@ const ReadingModeView = ({
   onPreviousChapter,
   onNextChapter,
   onToggleBookmark,
+  onShareVerse,
+  onHighlightVerse,
+  onRemoveHighlight,
+  swipeStyle,
 }: ReadingModeViewProps) => {
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isAnimating, setIsAnimating] = useState(isOpen);
@@ -124,17 +134,22 @@ const ReadingModeView = ({
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-12"
+        style={swipeStyle}
       >
         <div className="mx-auto max-w-4xl">
           <VerseList
             verses={verses}
             versesLoading={versesLoading}
             bookmarkedVerses={bookmarkedVerses}
+            highlightedVerses={highlightedVerses}
             selectedBookId={selectedBookId}
             selectedChapter={chapter}
             holyWordsEnabled={holyWordsEnabled}
             holyWordsColor={holyWordsColor}
             onToggleBookmark={onToggleBookmark}
+            onShareVerse={onShareVerse}
+            onHighlightVerse={onHighlightVerse}
+            onRemoveHighlight={onRemoveHighlight}
           />
         </div>
       </div>

@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OgSplatRouteImport } from './routes/og/$'
 import { Route as VersionBookChapterRouteImport } from './routes/$version.$book.$chapter'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OgSplatRoute = OgSplatRouteImport.update({
+  id: '/og/$',
+  path: '/og/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VersionBookChapterRoute = VersionBookChapterRouteImport.update({
@@ -25,27 +31,31 @@ const VersionBookChapterRoute = VersionBookChapterRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/og/$': typeof OgSplatRoute
   '/$version/$book/$chapter': typeof VersionBookChapterRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/og/$': typeof OgSplatRoute
   '/$version/$book/$chapter': typeof VersionBookChapterRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/og/$': typeof OgSplatRoute
   '/$version/$book/$chapter': typeof VersionBookChapterRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$version/$book/$chapter'
+  fullPaths: '/' | '/og/$' | '/$version/$book/$chapter'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$version/$book/$chapter'
-  id: '__root__' | '/' | '/$version/$book/$chapter'
+  to: '/' | '/og/$' | '/$version/$book/$chapter'
+  id: '__root__' | '/' | '/og/$' | '/$version/$book/$chapter'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OgSplatRoute: typeof OgSplatRoute
   VersionBookChapterRoute: typeof VersionBookChapterRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/og/$': {
+      id: '/og/$'
+      path: '/og/$'
+      fullPath: '/og/$'
+      preLoaderRoute: typeof OgSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$version/$book/$chapter': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OgSplatRoute: OgSplatRoute,
   VersionBookChapterRoute: VersionBookChapterRoute,
 }
 export const routeTree = rootRouteImport

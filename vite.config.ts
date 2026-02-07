@@ -17,6 +17,12 @@ const config = defineConfig(({ command }) => ({
     port: 3000,
     host: "0.0.0.0",
   },
+  optimizeDeps: {
+    exclude: ["@resvg/resvg-js"],
+  },
+  ssr: {
+    external: ["@resvg/resvg-js"],
+  },
   plugins: [
     devtools(),
     command === "serve" && mkcert(),

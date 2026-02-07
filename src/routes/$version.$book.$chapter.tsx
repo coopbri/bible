@@ -5,6 +5,7 @@ import { BibleReaderRoute } from "@/components/bible";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PSALM_QUOTES, getRandomPsalmQuote } from "@/data/psalmQuotes";
 import { bibleApi } from "@/lib/bibleApi";
+import app from "@/lib/config/app.config";
 import {
   booksOptions,
   chapterOptions,
@@ -20,11 +21,13 @@ import type { PsalmQuote } from "@/data/psalmQuotes";
 
 interface SearchParams {
   fullscreen?: boolean;
+  v?: number;
 }
 
 export const Route = createFileRoute("/$version/$book/$chapter")({
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
     fullscreen: search.fullscreen === true || search.fullscreen === "true",
+    v: typeof search.v === "string" ? parseInt(search.v, 10) : undefined,
   }),
   loader: async ({ params, context: { queryClient } }) => {
     const versionId = params.version;
@@ -73,12 +76,17 @@ export const Route = createFileRoute("/$version/$book/$chapter")({
     const chapterNum = chapter ?? 1;
 
     const title = `${bookName} ${chapterNum} ${versionCode} | Holy Bible`;
+    const ogImageUrl = `${app.url}/og/${loaderData?.versionId}/${loaderData?.bookId}/${chapterNum}.png`;
 
     return {
       meta: [
         { title },
         { property: "og:title", content: title },
         { name: "twitter:title", content: title },
+        { property: "og:image", content: ogImageUrl },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { name: "twitter:image", content: ogImageUrl },
       ],
     };
   },
@@ -143,6 +151,7 @@ function BibleReaderWrapper() {
       versionId={versionId}
       bookId={bookId}
       chapter={chapter}
+      targetVerse={search.v}
       readingMode={readingMode}
       setReadingMode={setReadingMode}
       psalmQuote={psalmQuote}
